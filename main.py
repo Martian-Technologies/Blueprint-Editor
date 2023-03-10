@@ -1,18 +1,6 @@
 from flask import Flask, render_template, redirect, make_response
 from util import sm_folder, project_util
 
-# download https://raw.githubusercontent.com/micku7zu/vanilla-tilt.js/master/dist/vanilla-tilt.js into UI/static/scripts/vanilla-tilt.js
-
-import requests
-import os
-
-if not os.path.exists('UI/static/scripts/'):
-    os.mkdir('UI/static/scripts/')
-if not os.path.exists('UI/static/scripts/vanilla-tilt.js'):
-    r = requests.get(
-        'https://raw.githubusercontent.com/micku7zu/vanilla-tilt.js/master/dist/vanilla-tilt.js')
-    with open('UI/static/scripts/vanilla-tilt.js', 'w', encoding='utf8') as f:
-        f.write(r.text)
 
 app = Flask(__name__, template_folder='UI', static_folder='UI/static')
 
@@ -34,4 +22,14 @@ async def editor(uuid: str):
     return redirect('/')
 
 if __name__ == '__main__':
+    import requests
+    import os
+
+    if not os.path.exists('UI/static/scripts/'):
+        os.mkdir('UI/static/scripts/')
+    if not os.path.exists('UI/static/scripts/vanilla-tilt.js'):
+        r = requests.get(
+            'https://raw.githubusercontent.com/micku7zu/vanilla-tilt.js/master/dist/vanilla-tilt.js', headers={'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'})
+        with open('UI/static/scripts/vanilla-tilt.js', 'w', encoding='utf8') as f:
+            f.write(r.text)
     app.run(host='127.0.0.1', port=8080, debug=True)
