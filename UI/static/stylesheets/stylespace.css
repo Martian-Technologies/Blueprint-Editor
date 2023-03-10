@@ -1,6 +1,7 @@
 :root{
     --bg-color: #282c34;
-    --bg-color-alt: #1f2229;
+    --bg-color-dark: #1f2229;
+    --bg-color-light: #333842;
     --text-color: #cccccc;
     --font-family: 'Roboto', sans-serif;
     --font-size-base: 16px;
@@ -32,41 +33,4 @@ h1 {
     /* height: 60px; */
     background-color: var(--bg-color);
     font-size: var(--font-size-small);
-}
-.project {
-    background-color: var(--bg-color-alt);
-    width: 40vh;
-    height: 40vh;
-    padding: 2vh;
-    margin-bottom: 2vh;
-    margin-right: 2vh;
-    /* center the text */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* make the text white */
-    color: var(--text-color);
-}
-.project:hover{
-    cursor: pointer;
-}
-
-.projectText{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    max-width: 90%;
-}
-.projectTitle{
-    font-size: var(--font-size-large);
-}
-.projectDescription{
-    font-size: var(--font-size-base);
-}
-
-#projects {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
 }

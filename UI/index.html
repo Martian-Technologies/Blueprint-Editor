@@ -6,6 +6,11 @@
             type="text/css"
             href="/static/stylesheets/stylespace.css"
         />
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/static/stylesheets/index.css"
+        />
     </head>
     <body>
         <div id="header">
@@ -19,6 +24,7 @@
                 data-tilt
                 data-tilt-glare
                 data-tilt-max-glare="0.05"
+                onclick="window.location.href = '/editor/{{project.uuid}}';"
             >
                 <span class="projectText">
                     <div class="projectTitle">{{project.name}}</div>

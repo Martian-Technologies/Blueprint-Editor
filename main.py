@@ -12,5 +12,14 @@ async def index():
     resp.headers['Cache-Control'] = 'no-cache'
     return resp
 
+
+@app.route("/editor/<uuid>")
+async def editor(uuid: str):
+    projects: list[util.projects.Project] = util.projects.get_projects()
+    for project in projects:
+        if project.uuid == uuid:
+            return render_template('editor.html', project=project)
+    return redirect('/')
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)

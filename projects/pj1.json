@@ -1,4 +1,5 @@
 {
     "name": "64-bit Binary Multiplier",
-    "description": "64-bit Binary Multiplier that uses CLA adders for maximum speed"
+    "description": "64-bit Binary Multiplier that uses CLA adders for maximum speed",
+    "uuid": "5363cffe-8cdd-433e-81c5-eb3077a72238"
 }

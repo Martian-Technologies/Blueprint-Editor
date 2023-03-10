@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 
 
 class Project(object):
@@ -10,6 +11,7 @@ class Project(object):
             self.filename = None
             self.name = None
             self.description = None
+            self.uuid = str(uuid.uuid4())
 
     def load(self, filename: str):
         self.filename = filename
@@ -17,6 +19,10 @@ class Project(object):
             data = json.load(f)
         self.name = data['name']
         self.description = data['description']
+        self.uuid = data['uuid']
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.uuid})'
 
 
 def get_projects() -> list[Project]:
