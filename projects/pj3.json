@@ -1,5 +1,6 @@
 {
     "name": "PID Auto-tuner",
     "description": "A circuit for honing in on the perfect PID values for your system.",
-    "uuid": "a09f4bc5-e12b-409a-8ce3-ce875da877bd"
+    "uuid": "a09f4bc5-e12b-409a-8ce3-ce875da877bd",
+    "blocks": []
 }
