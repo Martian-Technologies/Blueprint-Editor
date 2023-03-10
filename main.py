@@ -1,5 +1,7 @@
 from flask import Flask, render_template, redirect, make_response
 from util import sm_folder, project_util
+import requests
+import os
 
 
 app = Flask(__name__, template_folder='UI', static_folder='UI/static')
@@ -22,8 +24,6 @@ async def editor(uuid: str):
     return redirect('/')
 
 if __name__ == '__main__':
-    import requests
-    import os
 
     if not os.path.exists('UI/static/scripts/'):
         os.mkdir('UI/static/scripts/')

@@ -5,24 +5,19 @@
     padding: 2vh;
     margin-bottom: 2vh;
     margin-right: 2vh;
-    /* center the text */
-    display: flex;
-    justify-content: center;
-    align-items: center;
     /* make the text white */
     color: var(--text-color);
 }
+
+
 .project:hover{
     cursor: pointer;
+    z-index: 999;
 }
 
-.projectText{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    max-width: 90%;
-}
+/* .projectText{
+    width: 30vh;
+} */
 .projectTitle{
     font-size: var(--font-size-large);
 }
