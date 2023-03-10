@@ -1,6 +1,19 @@
 from flask import Flask, render_template, redirect, make_response
 from util import sm_folder, project_util
 
+# download https://raw.githubusercontent.com/micku7zu/vanilla-tilt.js/master/dist/vanilla-tilt.js into UI/static/scripts/vanilla-tilt.js
+
+import requests
+import os
+
+if not os.path.exists('UI/static/scripts/'):
+    os.mkdir('UI/static/scripts/')
+if not os.path.exists('UI/static/scripts/vanilla-tilt.js'):
+    r = requests.get(
+        'https://raw.githubusercontent.com/micku7zu/vanilla-tilt.js/master/dist/vanilla-tilt.js')
+    with open('UI/static/scripts/vanilla-tilt.js', 'w', encoding='utf8') as f:
+        f.write(r.text)
+
 app = Flask(__name__, template_folder='UI', static_folder='UI/static')
 
 
