@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <title>MTech Blueprint Editor</title>
+        <link
+            rel="stylesheet"
+            type="text/css"
+            href="/static/stylesheets/stylespace.css"
+        />
+    </head>
+    <body>
+        <div id="header">
+            <h1>MTech Blueprint Editor</h1>
+        </div>
+        <!-- grid of projects -->
+        <div id="projects">
+            {% for project in projects %}
+            <span
+                class="project"
+                data-tilt
+                data-tilt-glare
+                data-tilt-max-glare="0.05"
+            >
+                <span class="projectText">
+                    <div class="projectTitle">{{project.name}}</div>
+                    <div class="projectDescription">
+                        {{project.description}}
+                    </div>
+                </span>
+            </span>
+            {% endfor %}
+        </div>
+        <div id="footer">
+            <p>MTech Blueprint Editor</p>
+        </div>
+        <script
+            type="text/javascript"
+            src="/static/scripts/vanilla-tilt.js"
+        ></script>
+    </body>
+</html>

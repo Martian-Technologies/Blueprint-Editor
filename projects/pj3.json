@@ -1,0 +1,4 @@
+{
+    "name": "PID Auto-tuner",
+    "description": "A circuit for honing in on the perfect PID values for your system."
+}

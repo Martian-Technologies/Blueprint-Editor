@@ -1,7 +1,7 @@
 import os
 
 
-def getBlueprintsFolder():  # Looking for %appdata%/Axolot Games/Scrap Mechanic/User/User_*/Blueprints/
+def getBlueprintsFolder() -> str:  # Looking for %appdata%/Axolot Games/Scrap Mechanic/User/User_*/Blueprints/
     appdata = os.getenv('APPDATA')
     if not appdata:
         raise Exception('APPDATA environment variable not found')
@@ -18,7 +18,8 @@ def getBlueprintsFolder():  # Looking for %appdata%/Axolot Games/Scrap Mechanic/
     return bpFolder
 
 
-def getBlueprints():  # Looking for all blueprint folders in blueprints folder
+# Looking for all blueprint folders in blueprints folder
+def getBlueprints() -> list[str]:
     bpFolder = getBlueprintsFolder()
     contents = os.listdir(bpFolder)
     blueprints = []

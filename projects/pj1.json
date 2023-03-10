@@ -1,0 +1,4 @@
+{
+    "name": "64-bit Binary Multiplier",
+    "description": "64-bit Binary Multiplier that uses CLA adders for maximum speed"
+}
