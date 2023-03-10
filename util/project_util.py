@@ -21,6 +21,20 @@ class Project(object):
         self.description = data['description']
         self.uuid = data['uuid']
 
+    def setInfo(self, name: str, description: str):
+        self.name = name
+        self.description = description
+
+    def save(self):
+        if self.filename is None:
+            self.filename = os.path.join('projects', f'{self.uuid}.json')
+        with open(self.filename, 'w') as f:
+            json.dump({
+                'name': self.name,
+                'description': self.description,
+                'uuid': self.uuid
+            }, f, indent=4)
+
     def __str__(self) -> str:
         return f'{self.name} ({self.uuid})'
 
