@@ -36,7 +36,10 @@ async def editor(uuid: str):
     projects = get_projects()
     for project in projects:
         if project.uuid == uuid:
-            return render_template('editor.html', project=project)
+            if project.type == 'logic':
+                return render_template('logic_editor.html', project=project)
+            else:
+                return 'Unknown project type', 500
     return redirect('/')
 
 
@@ -49,17 +52,7 @@ async def get_project(uuid: str):
             break
     else:
         return 'Project not found', 404
-    blocks = []
-    for block in proj.blocks:
-        blocks.append({
-            'type': block.type,
-            'x': block.x,
-            'y': block.y,
-            'id': block.id,
-            'inputs': block.inputs,
-            'outputs': block.outputs
-        })
-    return jsonify(blocks)
+    return jsonify(proj.pack())
 
 
 @app.route("/editor/<uuid>/save", methods=['POST'])
@@ -71,16 +64,7 @@ async def save_project(uuid: str):
             break
     else:
         return 'Project not found', 404
-    proj.blocks = []
-    for block in request.json:
-        proj.blocks.append(project_util.Block(
-            type=block['type'],
-            x=block['x'],
-            y=block['y'],
-            id=block['id'],
-            inputs=block['inputs'],
-            outputs=block['outputs']
-        ))
+    proj.loaddata(request.get_json())
     proj.save()
     return 'Saved', 200
 

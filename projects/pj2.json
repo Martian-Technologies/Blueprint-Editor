@@ -2,12 +2,21 @@
     "name": "Ripple Adder Unit",
     "description": "Ripple Adder Unit, does ripple addition",
     "uuid": "8956d419-dd16-4ce6-9eae-f7205856e9c9",
-    "blocks": [
+    "type": "logic",
+    "data": [
         {
             "type": 5,
             "x": 0,
             "y": 0,
             "id": 0,
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "type": 6,
+            "x": 4,
+            "y": -3,
+            "id": 1,
             "inputs": [],
             "outputs": []
         }

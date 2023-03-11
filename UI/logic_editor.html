@@ -9,15 +9,15 @@
         <link
             rel="stylesheet"
             type="text/css"
-            href="/static/stylesheets/editor.css"
+            href="/static/stylesheets/logic_editor.css"
         />
+        <script src="/static/scripts/logic_editor.js"></script>
     </head>
-    <body>
-        {{project.name}}<br>
-        {{project.description}}<br>
-        {{project.uuid}}
-        <div id="footer">
+    <body onload="ready()">
+        <canvas id="editorCanvas">
+        </canvas>
+        <!-- <div id="footer">
             <p>MTech Blueprint Editor</p>
-        </div>
+        </div> -->
     </body>
 </htnk>
