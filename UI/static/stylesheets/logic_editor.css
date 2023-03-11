@@ -7,3 +7,9 @@
     background-color: #fff;
     z-index: 1;
 }
+html {
+  overscroll-behavior-x: none;
+} 
+body {
+  overscroll-behavior-x: none;
+}

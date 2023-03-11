@@ -4,7 +4,7 @@ import uuid
 from enum import Enum
 
 
-class Gates(Enum):
+class LogicGates(Enum):
     BUFFER = 1  # virtual gate with 0 delay
     NOT = 2  # creates copy of input with inverted inversion ex. XNOR -> XOR
     AND = 3
@@ -84,7 +84,7 @@ class Project(object):
             for block in data['data']:
                 save_blocks.append(
                     LogicBlock(
-                        type=Gates(block['type']),
+                        type=LogicGates(block['type']),
                         x=block['x'],
                         y=block['y'],
                         id=block['id'],
@@ -144,7 +144,7 @@ class Project(object):
 
 
 class LogicBlock(object):
-    def __init__(self, type: Gates | str, x: float, y: float, id: int | None = None, inputs: list[int] | None = None, outputs: list[int] | None = None):
+    def __init__(self, type: LogicGates | str, x: float, y: float, id: int | None = None, inputs: list[int] | None = None, outputs: list[int] | None = None):
         self.type = type
         self.x = x
         self.y = y
