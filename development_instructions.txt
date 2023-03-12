@@ -1,0 +1,10 @@
+To develop:
+install node.js
+npm install -g typescript
+npm install eslint
+
+ctrl+shift+b to build select (tsc: build - tsconfig.json) if given the option
+
+python -m pip install -r requirements.txt
+python main.py
+going onto 127.0.0.1:8080 will show the website
