@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "es2022",
+      "dom"
+    ],
+    "target": "es6",
+    "module": "commonjs",
+    "sourceMap": true,
+    "watch": true
+  }
+}
