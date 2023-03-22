@@ -6,11 +6,6 @@
         "**/**.js": {
             "when": "$(basename).tsx"
         },
-        "**/*.js.map": {
-            "when": "$(basename).ts"
-        },
-        "**/**.js.map": {
-            "when": "$(basename).tsx"
-        }
+        "**/*.map": {}
     }
 }

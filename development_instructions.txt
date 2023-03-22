@@ -1,7 +1,6 @@
 To develop:
 install node.js
-npm install -g typescript
-npm install eslint
+npm i
 
 ctrl+shift+b to build select (tsc: build - tsconfig.json) if given the option
 

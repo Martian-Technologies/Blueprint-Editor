@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, make_response, jsonify, request
-from util import sm_folder, project_util
+from util import sm_folder, project_util, logic_block_options
 import requests
 import os
 
@@ -27,6 +27,13 @@ def get_projects() -> list[project_util.Project]:
 async def index():
     projects = get_projects()
     resp = make_response(render_template('index.html', projects=projects))
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
+
+
+@app.route("/logic/block_options")
+async def get_logic_block_options():
+    resp = make_response(jsonify(logic_block_options.get_blocks()))
     resp.headers['Cache-Control'] = 'no-cache'
     return resp
 

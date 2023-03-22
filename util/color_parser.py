@@ -84,7 +84,7 @@ def parse(color):
     if color[0] == '#':
         return color[1:]
     if type(color) == tuple:
-        return rgb_to_hex(*color)
+        return rgb_to_hex(*color).upper()
     if color.lower() in all_colors:
         return all_colors[color.lower()]
     for char in color:

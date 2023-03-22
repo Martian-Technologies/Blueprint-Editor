@@ -10,7 +10,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const BG_COLOR = "#282c34";
 const GATE_OUTLINE_COLOR = "#ffffff"; //"#333842";
 const GATE_COLOR = "#4a4e57";
+const SIDE_PANEL_COLOR = "#333842";
+const SIDE_PANEL_TEXT_COLOR = "#ffffff";
+const SIDE_PANEL_HOVER_COLOR = "#4a4e57";
 const uuid = location.pathname.split("/")[2];
+const blockOptions = [];
+let sidebarWidth = 300;
 let data = null;
 let blocks = [];
 let camera_x = 0;
@@ -24,10 +29,12 @@ let last_mouse_y = 0;
 let mouse_down = false;
 let moving_screen = false;
 let canvas_dirty = true;
+let sidebar_scroll = 0;
 addEventListener("load", ready);
 function ready() {
     return __awaiter(this, void 0, void 0, function* () {
         matchSize();
+        fetchBlockOptions();
         data = yield fetchData();
         blocks = data.data;
         console.log(blocks);
@@ -56,6 +63,7 @@ function ready() {
         canvas.addEventListener("mousemove", (e) => {
             current_mouse_x = e.clientX;
             current_mouse_y = e.clientY;
+            canvas_dirty = true;
         });
         setInterval(() => {
             if (moving_screen) {
@@ -70,22 +78,32 @@ function ready() {
         }, 1000 / 60);
         // detect scroll
         canvas.addEventListener("wheel", (e) => {
-            if (e.ctrlKey) {
-                e.preventDefault();
-                zoom *= 1 + Math.cbrt(e.deltaY) / 20;
+            if (current_mouse_x > sidebarWidth) {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    zoom *= 1 + Math.cbrt(e.deltaY) / 20;
+                    if (zoom < 4) {
+                        zoom = 4;
+                    }
+                }
+                else {
+                    let dx = (e.deltaX / canvas.height) * zoom;
+                    let dy = (e.deltaY / canvas.width) * zoom;
+                    if (e.shiftKey) {
+                        dx = dy - dx;
+                        dy -= dx;
+                        dx += dy;
+                    }
+                    camera_x += dx;
+                    camera_y += dy;
+                }
+                canvas_dirty = true;
             }
             else {
-                let dx = (e.deltaX / canvas.height) * zoom;
-                let dy = (e.deltaY / canvas.width) * zoom;
-                if (e.shiftKey) {
-                    dx = dy - dx;
-                    dy -= dx;
-                    dx += dy;
-                }
-                camera_x += dx;
-                camera_y += dy;
+                // scroll sidebar
+                sidebar_scroll += e.deltaY;
+                canvas_dirty = true;
             }
-            canvas_dirty = true;
         });
     });
 }
@@ -100,7 +118,18 @@ function matchSize() {
     // set size of canvas to match screen
     canvas.width = c_width;
     canvas.height = c_height;
+    sidebarWidth = c_width * 0.2;
     canvas_dirty = true;
+}
+function fetchBlockOptions() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const resp = yield fetch("/logic/block_options");
+        const data = yield resp.json();
+        for (const block of data) {
+            blockOptions.push(block);
+        }
+        console.log(blockOptions);
+    });
 }
 function fetchData() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -129,7 +158,7 @@ function worldToScreen(x, y) {
     const canvas = document.getElementsByTagName("canvas")[0];
     const scale = canvas.height / zoom;
     return {
-        x: (x - camera_x) * scale + canvas.width / 2,
+        x: (x - camera_x) * scale + (canvas.width + sidebarWidth) / 2,
         y: (y - camera_y) * scale + canvas.height / 2,
     };
 }
@@ -141,10 +170,10 @@ function renderCanvas() {
     const canvas = document.getElementsByTagName("canvas")[0];
     const scale = canvas.height / zoom;
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // ctx.clearStroke
+    // render background
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    //render gates
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
         ctx.fillStyle = GATE_COLOR;
@@ -158,6 +187,28 @@ function renderCanvas() {
         ctx.roundRect(pos.x - (scale / 2) * gate_width, pos.y - (scale / 2) * gate_height, scale * gate_width, scale * gate_height, 0.15 * scale);
         ctx.fill();
         ctx.stroke();
+    }
+    // render side panel
+    ctx.fillStyle = SIDE_PANEL_COLOR;
+    ctx.fillRect(0, 0, sidebarWidth, canvas.height);
+    ctx.fillStyle = SIDE_PANEL_TEXT_COLOR;
+    // render block palette on the sidebar
+    ctx.font = "20px Arial";
+    let y = 0;
+    for (const block of blockOptions) {
+        console.log(block);
+        // calculate bounding box
+        const width = sidebarWidth;
+        const height = 30;
+        const top = y * 30 - sidebar_scroll + 8;
+        const left = 0;
+        if (current_mouse_x > left && current_mouse_x < left + width && current_mouse_y > top && current_mouse_y < top + height) {
+            ctx.fillStyle = SIDE_PANEL_HOVER_COLOR;
+            ctx.fillRect(left, top, width, height);
+            ctx.fillStyle = SIDE_PANEL_TEXT_COLOR;
+        }
+        ctx.fillText(block.name, 10, y * 30 + 30 - sidebar_scroll);
+        y += 1;
     }
 }
 //# sourceMappingURL=logic_editor.js.map
