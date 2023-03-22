@@ -9,16 +9,16 @@
             "x": 0,
             "y": 0,
             "id": 0,
-            "inputs": [],
-            "outputs": [1]
+            "inputs": [[]],
+            "outputs": [[1]]
         },
         {
             "type": 6,
             "x": 4,
             "y": -3,
             "id": 1,
-            "inputs": [0],
-            "outputs": []
+            "inputs": [[0]],
+            "outputs": [[]]
         }
     ]
 }

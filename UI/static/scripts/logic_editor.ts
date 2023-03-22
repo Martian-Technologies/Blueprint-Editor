@@ -4,6 +4,7 @@ const GATE_COLOR = "#4a4e57";
 const SIDE_PANEL_COLOR = "#333842";
 const SIDE_PANEL_TEXT_COLOR = "#ffffff";
 const SIDE_PANEL_HOVER_COLOR = "#4a4e57";
+const PIN_COLOR = "#ffffff";
 
 const uuid = location.pathname.split("/")[2];
 const blockOptions: Array<BlockType> = [];
@@ -130,8 +131,8 @@ type Block = {
     y: number;
     id: number;
     type: number;
-    inputs: Array<number>;
-    outputs: Array<number>;
+    inputs: Array<Array<number>>;
+    outputs: Array<Array<number>>;
 }
 
 type BlockType = {
@@ -144,6 +145,11 @@ type BlockType = {
     inputPinTypes: Array<Array<string>> | null; // null means any type
     outputPinTypes: Array<Array<string>> | null;
     requiredMods: Array<string>;
+}
+
+type Position = {
+    x: number;
+    y: number;
 }
 
 async function fetchBlockOptions(): Promise<void> {
@@ -185,6 +191,24 @@ function worldToScreen(x: number, y: number) {
     };
 }
 
+function drawArrow(ctx: CanvasRenderingContext2D, tip: Position, angle: number, length: number, width: number) {
+    console.log(tip, angle, length, width)
+    const arrow_left = {
+        x: tip.x + Math.cos(angle + Math.PI / 4) * width + Math.cos(angle) * length,
+        y: tip.y + Math.sin(angle + Math.PI / 4) * width + Math.sin(angle) * length,
+    };
+    const arrow_right = {
+        x: tip.x + Math.cos(angle - Math.PI / 4) * width + Math.cos(angle) * length,
+        y: tip.y + Math.sin(angle - Math.PI / 4) * width + Math.sin(angle) * length,
+    };
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(arrow_left.x, arrow_left.y);
+    ctx.lineTo(arrow_right.x, arrow_right.y);
+    // ctx.stroke();
+    ctx.fill();
+}
+
 function renderCanvas() {
     if (!canvas_dirty) {
         return;
@@ -200,11 +224,38 @@ function renderCanvas() {
     //render gates
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
+        // draw pins
+        ctx.fillStyle = GATE_COLOR;
+        ctx.strokeStyle = PIN_COLOR;
+        // find block type
+        const blockType = blockOptions.find((b) => b.type === block.type);
+        if (!blockType) {
+            console.error("Block type not found: " + block.type);
+            return;
+        }
+        // draw input pins
+        for (let j = 0; j < blockType.inputPinNames.length; j++) {
+            // const pin = blockType.inputPinNames[j];
+            const pinPos = worldToScreen(block.x - .5, block.y + j - (blockType.inputPinNames.length - 1) / 2);
+            ctx.beginPath();
+            ctx.arc(pinPos.x, pinPos.y, scale / 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
+        // draw output pins
+        for (let j = 0; j < blockType.outputPinNames.length; j++) {
+            // const pin = blockType.outputPinNames[j];
+            const pinPos = worldToScreen(block.x + .5, block.y + j - (blockType.outputPinNames.length - 1) / 2);
+            ctx.beginPath();
+            ctx.arc(pinPos.x, pinPos.y, scale / 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
         ctx.fillStyle = GATE_COLOR;
         ctx.strokeStyle = GATE_OUTLINE_COLOR;
         const pos = worldToScreen(block.x, block.y);
-        const gate_height = 2;
-        const gate_width = 2;
+        const gate_height = Math.max(blockType.inputPinNames.length, blockType.outputPinNames.length);
+        const gate_width = 1;
         // ctx.fillRect(pos.x, pos.y, scale, scale);
         // draw rounded gate centered around pos
         ctx.beginPath();
@@ -217,6 +268,52 @@ function renderCanvas() {
         );
         ctx.fill();
         ctx.stroke();
+        ctx.strokeStyle = PIN_COLOR;
+        ctx.fillStyle = PIN_COLOR;
+        // render connections
+        // console.log(block.outputs)
+        for (let pinIndex = 0; pinIndex < block.outputs.length; pinIndex++) {
+            // console.log(block.outputs[pinIndex])
+            for (let connectionIndex = 0; connectionIndex < block.outputs[pinIndex].length; connectionIndex++) {
+                // find the block that this pin is connected to
+                const connectedBlock = blocks.find((b) => b.id === block.outputs[pinIndex][connectionIndex]);
+                // console.log(connectedBlock)
+                if (!connectedBlock) {
+                    console.error("Could not find connected block: " + block.outputs[pinIndex][connectionIndex]);
+                    return;
+                }
+                // find the pin index of the connected block
+                for (let ingoingPinIndex = 0; ingoingPinIndex < connectedBlock.inputs.length; ingoingPinIndex++) {
+                    if (connectedBlock.inputs[ingoingPinIndex].includes(block.id)) {
+                        // draw connection
+                        const start = worldToScreen(block.x + .625, block.y + pinIndex - (blockType.outputPinNames.length - 1) / 2);
+                        const end = worldToScreen(connectedBlock.x - .625, connectedBlock.y + ingoingPinIndex - (blockType.inputPinNames.length - 1) / 2);
+                        const horiz_distance = Math.abs(start.x - end.x);
+                        const start_guide = {
+                            x: start.x + horiz_distance / 2,
+                            y: start.y,
+                        };
+                        const end_guide = {
+                            x: end.x - horiz_distance / 2,
+                            y: end.y,
+                        };
+                        // draw bezier curve
+                        ctx.beginPath();
+                        ctx.moveTo(start.x, start.y);
+                        ctx.bezierCurveTo(start_guide.x, start_guide.y, end_guide.x, end_guide.y, end.x, end.y);
+                        ctx.stroke();
+                        // draw arrow
+                        const arrow_size = .05 * scale;
+                        const arrow_angle = Math.atan2(end_guide.y - end.y, end_guide.x - end.x);
+                        const arrow_tip = {
+                            x: end.x,
+                            y: end.y,
+                        };
+                        drawArrow(ctx, arrow_tip, arrow_angle, arrow_size, arrow_size * 1);
+                    }
+                }
+            }
+        }
     }
 
     // render side panel
@@ -227,7 +324,7 @@ function renderCanvas() {
     ctx.font = "20px Arial";
     let y = 0;
     for (const block of blockOptions) {
-        console.log(block)
+        // console.log(block)
         // calculate bounding box
         const width = sidebarWidth;
         const height = 30;

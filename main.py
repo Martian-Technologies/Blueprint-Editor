@@ -14,7 +14,7 @@ def get_projects() -> list[project_util.Project]:
     global projects_dirty
     global projects
     if projects_dirty:
-        projects_dirty = False
+        projects_dirty = True
         projects = []
         for file in os.listdir('projects'):
             if file.endswith('.json'):
