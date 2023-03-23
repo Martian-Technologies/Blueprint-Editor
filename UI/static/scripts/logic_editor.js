@@ -14,6 +14,9 @@ const SIDE_PANEL_COLOR = "#333842";
 const SIDE_PANEL_TEXT_COLOR = "#ffffff";
 const SIDE_PANEL_HOVER_COLOR = "#4a4e57";
 const PIN_COLOR = "#ffffff";
+const SELECT_BOX_COLOR = "#ffffff33";
+const GATE_SELECTED_COLOR = "#4a4e57";
+const GATE_SELECTED_OUTLINE_COLOR = "#ffffff";
 const uuid = location.pathname.split("/")[2];
 const blockOptions = [];
 let sidebarWidth = 300;
@@ -31,6 +34,12 @@ let mouse_down = false;
 let moving_screen = false;
 let canvas_dirty = true;
 let sidebar_scroll = 0;
+let block_option_selected = null;
+let highest_id = 0;
+let selecting_box = false;
+let selection_start = { x: 0, y: 0 };
+let gates_selected = [];
+let gates_selecting = [];
 addEventListener("load", ready);
 function ready() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -38,6 +47,60 @@ function ready() {
         fetchBlockOptions();
         data = yield fetchData();
         blocks = data.data;
+        // center camera on blocks
+        let min_x = null;
+        let max_x = null;
+        let min_y = null;
+        let max_y = null;
+        for (const block of blocks) {
+            if (min_x === null || block.x < min_x) {
+                min_x = block.x;
+            }
+            if (max_x === null || block.x > max_x) {
+                max_x = block.x;
+            }
+            if (min_y === null || block.y < min_y) {
+                min_y = block.y;
+            }
+            if (max_y === null || block.y > max_y) {
+                max_y = block.y;
+            }
+            if (block.id > highest_id) {
+                highest_id = block.id;
+            }
+        }
+        if (min_x !== null && max_x !== null && min_y !== null && max_y !== null) {
+            camera_x = (min_x + max_x) / 2;
+            camera_y = (min_y + max_y) / 2;
+        }
+        const v_dist = Math.abs(max_y - min_y);
+        const h_dist = Math.abs(max_x - min_x);
+        min_x -= h_dist * 0.1;
+        max_x += h_dist * 0.1;
+        min_y -= v_dist * 0.1;
+        max_y += v_dist * 0.1;
+        // scale camera to fit blocks
+        if (min_x !== null && max_x !== null && min_y !== null && max_y !== null) {
+            let sc_to_world_topleft = { x: 0, y: 0 };
+            let sc_to_world_bottomright = { x: 0, y: 0 };
+            while (!(sc_to_world_topleft.x < min_x &&
+                sc_to_world_topleft.y < min_y &&
+                sc_to_world_bottomright.x > max_x &&
+                sc_to_world_bottomright.y > max_y)) {
+                sc_to_world_topleft = screenToWorld(0, 0);
+                sc_to_world_bottomright = screenToWorld(document.getElementsByTagName("canvas")[0].width, document.getElementsByTagName("canvas")[0].height);
+                // if (
+                //     sc_to_world_topleft.x < min_x &&
+                //     sc_to_world_topleft.y < min_y &&
+                //     sc_to_world_bottomright.x > max_x &&
+                //     sc_to_world_bottomright.y > max_y
+                // ) {
+                //     break;
+                // }
+                zoom *= 1.1;
+            }
+        }
+        // gates_selected.push(blocks[0]);
         console.log(blocks);
         setInterval(renderCanvas, 1000 / 60);
         // detect click and drag
@@ -46,8 +109,31 @@ function ready() {
             mouse_down = true;
             last_mouse_x = e.clientX;
             last_mouse_y = e.clientY;
-            if (e.shiftKey || e.ctrlKey || e.which == 3 || e.which == 2) {
+            if (e.which == 3 || e.which == 2) {
                 moving_screen = true;
+            }
+            else if (last_mouse_x < sidebarWidth) {
+                if (block_option_selected) {
+                    const block = {
+                        id: highest_id + 1,
+                        type: block_option_selected.type,
+                        x: camera_x,
+                        y: camera_y,
+                        inputs: [],
+                        outputs: [],
+                    };
+                    highest_id++;
+                    blocks.push(block);
+                    gates_selected.push(block);
+                }
+            }
+            else {
+                selecting_box = true;
+                selection_start = screenToWorld(last_mouse_x, last_mouse_y);
+                if (!e.shiftKey) {
+                    gates_selected = [];
+                }
+                canvas_dirty = true;
             }
         });
         canvas.addEventListener("contextmenu", (e) => {
@@ -56,6 +142,16 @@ function ready() {
         canvas.addEventListener("mouseup", () => {
             mouse_down = false;
             moving_screen = false;
+            if (selecting_box) {
+                selecting_box = false;
+                // move contents from gates_selecting to gates_selected
+                for (const block of gates_selecting) {
+                    if (!gates_selected.includes(block)) {
+                        gates_selected.push(block);
+                    }
+                }
+                gates_selecting = [];
+            }
         });
         canvas.addEventListener("mouseleave", () => {
             mouse_down = false;
@@ -163,8 +259,16 @@ function worldToScreen(x, y) {
         y: (y - camera_y) * scale + canvas.height / 2,
     };
 }
+function screenToWorld(x, y) {
+    const canvas = document.getElementsByTagName("canvas")[0];
+    const scale = canvas.height / zoom;
+    return {
+        x: (x - (canvas.width + sidebarWidth) / 2) / scale + camera_x,
+        y: (y - canvas.height / 2) / scale + camera_y,
+    };
+}
 function drawArrow(ctx, tip, angle, length, width) {
-    console.log(tip, angle, length, width);
+    // console.log(tip, angle, length, width)
     const arrow_left = {
         x: tip.x + Math.cos(angle + Math.PI / 4) * width + Math.cos(angle) * length,
         y: tip.y + Math.sin(angle + Math.PI / 4) * width + Math.sin(angle) * length,
@@ -174,17 +278,68 @@ function drawArrow(ctx, tip, angle, length, width) {
         y: tip.y + Math.sin(angle - Math.PI / 4) * width + Math.sin(angle) * length,
     };
     ctx.beginPath();
-    ctx.moveTo(tip.x, tip.y);
-    ctx.lineTo(arrow_left.x, arrow_left.y);
+    ctx.moveTo(arrow_left.x, arrow_left.y);
+    ctx.lineTo(tip.x, tip.y);
     ctx.lineTo(arrow_right.x, arrow_right.y);
-    // ctx.stroke();
-    ctx.fill();
+    ctx.stroke();
+    // ctx.fill();
+}
+function drawConnection(ctx, start, end, cnt_ref, scale) {
+    const horiz_distance = Math.abs(start.x - end.x);
+    const start_guide = {
+        x: start.x + horiz_distance / 2,
+        y: start.y,
+    };
+    const end_guide = {
+        x: end.x - horiz_distance / 2,
+        y: end.y,
+    };
+    // calc arrow
+    const arrow_size = .05 * scale;
+    let arrow_angle = Math.atan2(end_guide.y - end.y, end_guide.x - end.x);
+    const arrow_tip = {
+        x: end.x,
+        y: end.y,
+    };
+    // draw bezier curve
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    if (cnt_ref !== "start" && cnt_ref !== "end") {
+        ctx.bezierCurveTo(start_guide.x, start_guide.y, end_guide.x, end_guide.y, end.x, end.y);
+    }
+    else {
+        if (cnt_ref === "start") {
+            ctx.quadraticCurveTo(start_guide.x, start_guide.y, end.x, end.y);
+            arrow_angle = Math.atan2(start_guide.y - end.y, start_guide.x - end.x);
+        }
+        else {
+            ctx.quadraticCurveTo(end_guide.x, end_guide.y, end.x, end.y);
+        }
+    }
+    ctx.stroke();
+    // draw arrow
+    if (zoom < 30) {
+        drawArrow(ctx, arrow_tip, arrow_angle, arrow_size, arrow_size * 1);
+        // console.log('rendering arrow')
+    }
 }
 function renderCanvas() {
     if (!canvas_dirty) {
         return;
     }
     canvas_dirty = false;
+    let selection_screen_end = { x: 0, y: 0 };
+    let selection_screen_start = { x: 0, y: 0 };
+    let selection_screen_topleft = { x: 0, y: 0 };
+    let selection_screen_width = 0;
+    let selection_screen_height = 0;
+    if (selecting_box) {
+        selection_screen_start = worldToScreen(selection_start.x, selection_start.y);
+        selection_screen_end = { x: current_mouse_x, y: current_mouse_y };
+        selection_screen_topleft = { x: Math.min(selection_screen_start.x, selection_screen_end.x), y: Math.min(selection_screen_start.y, selection_screen_end.y) };
+        selection_screen_width = Math.abs(selection_screen_start.x - selection_screen_end.x);
+        selection_screen_height = Math.abs(selection_screen_start.y - selection_screen_end.y);
+    }
     const canvas = document.getElementsByTagName("canvas")[0];
     const scale = canvas.height / zoom;
     const ctx = canvas.getContext("2d");
@@ -194,6 +349,12 @@ function renderCanvas() {
     //render gates
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
+        if (gates_selected.includes(block) || gates_selecting.includes(block)) {
+            ctx.lineWidth = 3;
+        }
+        else {
+            ctx.lineWidth = 1;
+        }
         // draw pins
         ctx.fillStyle = GATE_COLOR;
         ctx.strokeStyle = PIN_COLOR;
@@ -221,17 +382,47 @@ function renderCanvas() {
             ctx.fill();
             ctx.stroke();
         }
-        ctx.fillStyle = GATE_COLOR;
-        ctx.strokeStyle = GATE_OUTLINE_COLOR;
+        if (gates_selected.includes(block)) {
+            ctx.fillStyle = GATE_SELECTED_COLOR;
+            ctx.strokeStyle = GATE_SELECTED_OUTLINE_COLOR;
+        }
+        else {
+            ctx.fillStyle = GATE_COLOR;
+            ctx.strokeStyle = GATE_OUTLINE_COLOR;
+        }
         const pos = worldToScreen(block.x, block.y);
         const gate_height = Math.max(blockType.inputPinNames.length, blockType.outputPinNames.length);
         const gate_width = 1;
+        const block_topleft = {
+            x: pos.x - (scale / 2) * gate_width,
+            y: pos.y - (scale / 2) * gate_height
+        };
         // ctx.fillRect(pos.x, pos.y, scale, scale);
         // draw rounded gate centered around pos
         ctx.beginPath();
-        ctx.roundRect(pos.x - (scale / 2) * gate_width, pos.y - (scale / 2) * gate_height, scale * gate_width, scale * gate_height, 0.15 * scale);
+        ctx.roundRect(block_topleft.x, block_topleft.y, scale * gate_width, scale * gate_height, 0.15 * scale);
         ctx.fill();
         ctx.stroke();
+        // check block collision with selection box
+        if (selecting_box) {
+            const block_bottomright = {
+                x: block_topleft.x + scale * gate_width,
+                y: block_topleft.y + scale * gate_height
+            };
+            const collides = (selection_screen_topleft.x < block_bottomright.x &&
+                selection_screen_topleft.y < block_bottomright.y &&
+                selection_screen_topleft.x + selection_screen_width > block_topleft.x &&
+                selection_screen_topleft.y + selection_screen_height > block_topleft.y);
+            if (collides && !gates_selecting.includes(block)) {
+                gates_selecting.push(block);
+                canvas_dirty = true;
+            }
+            if (!collides && gates_selecting.includes(block)) {
+                gates_selecting.splice(gates_selecting.indexOf(block), 1);
+                canvas_dirty = true;
+            }
+        }
+        ctx.lineWidth = 1;
         ctx.strokeStyle = PIN_COLOR;
         ctx.fillStyle = PIN_COLOR;
         // render connections
@@ -252,32 +443,17 @@ function renderCanvas() {
                         // draw connection
                         const start = worldToScreen(block.x + .625, block.y + pinIndex - (blockType.outputPinNames.length - 1) / 2);
                         const end = worldToScreen(connectedBlock.x - .625, connectedBlock.y + ingoingPinIndex - (blockType.inputPinNames.length - 1) / 2);
-                        const horiz_distance = Math.abs(start.x - end.x);
-                        const start_guide = {
-                            x: start.x + horiz_distance / 2,
-                            y: start.y,
-                        };
-                        const end_guide = {
-                            x: end.x - horiz_distance / 2,
-                            y: end.y,
-                        };
-                        // draw bezier curve
-                        ctx.beginPath();
-                        ctx.moveTo(start.x, start.y);
-                        ctx.bezierCurveTo(start_guide.x, start_guide.y, end_guide.x, end_guide.y, end.x, end.y);
-                        ctx.stroke();
-                        // draw arrow
-                        const arrow_size = .05 * scale;
-                        const arrow_angle = Math.atan2(end_guide.y - end.y, end_guide.x - end.x);
-                        const arrow_tip = {
-                            x: end.x,
-                            y: end.y,
-                        };
-                        drawArrow(ctx, arrow_tip, arrow_angle, arrow_size, arrow_size * 1);
+                        drawConnection(ctx, start, end, null, scale);
                     }
                 }
             }
         }
+    }
+    // render selection box
+    if (selecting_box) {
+        ctx.fillStyle = SELECT_BOX_COLOR;
+        // draw rect
+        ctx.fillRect(selection_screen_topleft.x, selection_screen_topleft.y, selection_screen_width, selection_screen_height);
     }
     // render side panel
     ctx.fillStyle = SIDE_PANEL_COLOR;
@@ -286,6 +462,7 @@ function renderCanvas() {
     // render block palette on the sidebar
     ctx.font = "20px Arial";
     let y = 0;
+    block_option_selected = null;
     for (const block of blockOptions) {
         // console.log(block)
         // calculate bounding box
@@ -297,6 +474,7 @@ function renderCanvas() {
             ctx.fillStyle = SIDE_PANEL_HOVER_COLOR;
             ctx.fillRect(left, top, width, height);
             ctx.fillStyle = SIDE_PANEL_TEXT_COLOR;
+            block_option_selected = block;
         }
         ctx.fillText(block.name, 10, y * 30 + 30 - sidebar_scroll);
         y += 1;
