@@ -1,4 +1,4 @@
-:root{
+:root {
     --bg-color: #282c34;
     --bg-color-dark: #1f2229;
     --bg-color-light: #333842;
@@ -9,7 +9,7 @@
     --font-size-large: 36px;
 }
 
-body{
+body {
     background-color: var(--bg-color);
     color: var(--text-color);
     font-family: var(--font-family);
@@ -22,10 +22,12 @@ a {
 }
 
 h1 {
-    font-size: var(--font-size-large);
+    font-size: var(--font-size-small);
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
 }
 
-#footer{
+#footer {
     /* move to bottom of screen */
     position: fixed;
     bottom: 0;

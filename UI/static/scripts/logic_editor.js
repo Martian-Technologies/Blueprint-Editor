@@ -64,11 +64,30 @@ function checkConnectionPins(b1, b2, p1Direction, p1Index, p2Index) {
     return false;
 }
 function connectPins(b1, b2, p1Direction, p1Index, p2Index) {
+    const b1_type = blockOptions.find(b => b.type == b1.type);
+    const b2_type = blockOptions.find(b => b.type == b2.type);
+    let no_match = true;
     if (p1Direction == "input") {
+        for (const type of (b1_type === null || b1_type === void 0 ? void 0 : b1_type.inputPinTypes[p1Index]) || []) {
+            if (b2_type === null || b2_type === void 0 ? void 0 : b2_type.outputPinTypes[p2Index].includes(type)) {
+                no_match = false;
+            }
+        }
+        if (no_match) {
+            return;
+        }
         b1.inputs[p1Index].push(b2.id);
         b2.outputs[p2Index].push(b1.id);
     }
     if (p1Direction == "output") {
+        for (const type of (b2_type === null || b2_type === void 0 ? void 0 : b2_type.inputPinTypes[p2Index]) || []) {
+            if (b1_type === null || b1_type === void 0 ? void 0 : b1_type.outputPinTypes[p1Index].includes(type)) {
+                no_match = false;
+            }
+        }
+        if (no_match) {
+            return;
+        }
         b2.inputs[p2Index].push(b1.id);
         b1.outputs[p1Index].push(b2.id);
     }
@@ -90,6 +109,39 @@ function toggleConnectionPins(b1, b2, p1Direction, p1Index, p2Index) {
     else {
         connectPins(b1, b2, p1Direction, p1Index, p2Index);
     }
+}
+function clearPin(block, pinDirection, pinIndex) {
+    if (pinDirection == "input") {
+        for (const id of block.inputs[pinIndex]) {
+            const otherBlock = getBlockById(id);
+            if (otherBlock) {
+                otherBlock.outputs = otherBlock.outputs.map(o => o.filter(id => id != block.id));
+            }
+        }
+        block.inputs[pinIndex] = [];
+    }
+    else {
+        for (const id of block.outputs[pinIndex]) {
+            const otherBlock = getBlockById(id);
+            if (otherBlock) {
+                otherBlock.inputs = otherBlock.inputs.map(o => o.filter(id => id != block.id));
+            }
+        }
+        block.outputs[pinIndex] = [];
+    }
+}
+function deleteBlock(block) {
+    for (let i = 0; i < block.inputs.length; i++) {
+        clearPin(block, "input", i);
+    }
+    for (let i = 0; i < block.outputs.length; i++) {
+        clearPin(block, "output", i);
+    }
+    // remove from blocks without creating a new array
+    blocks.splice(blocks.indexOf(block), 1);
+}
+function getBlockById(id) {
+    return blocks.find(b => b.id == id) || null;
 }
 function ready() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -155,13 +207,21 @@ function ready() {
             }
             else if (last_mouse_x < sidebarWidth) {
                 if (block_option_selected) {
+                    const inpts = [];
+                    for (let i = 0; i < block_option_selected.inputPinNames.length; i++) {
+                        inpts.push([]);
+                    }
+                    const outpts = [];
+                    for (let i = 0; i < block_option_selected.outputPinNames.length; i++) {
+                        outpts.push([]);
+                    }
                     const block = {
                         id: highest_id + 1,
                         type: block_option_selected.type,
                         x: screenToWorld(last_mouse_x, last_mouse_y).x,
                         y: screenToWorld(last_mouse_x, last_mouse_y).y,
-                        inputs: [],
-                        outputs: [],
+                        inputs: inpts,
+                        outputs: outpts,
                     };
                     holding_block = true;
                     highest_id++;
@@ -203,7 +263,15 @@ function ready() {
         canvas.addEventListener("mouseup", () => {
             mouse_down = false;
             moving_screen = false;
-            holding_block = false;
+            if (holding_block) {
+                if (current_mouse_x < sidebarWidth) {
+                    for (const block of gates_selected) {
+                        deleteBlock(block);
+                    }
+                    gates_selected = [];
+                }
+                holding_block = false;
+            }
             if (selecting_box) {
                 selecting_box = false;
                 // move contents from gates_selecting to gates_selected
@@ -292,6 +360,16 @@ function ready() {
             else {
                 // scroll sidebar
                 sidebar_scroll += e.deltaY;
+                canvas_dirty = true;
+            }
+        });
+        document.addEventListener("keydown", (e) => {
+            console.log(e.key);
+            if (e.key === "Delete" || e.key === "Backspace") {
+                for (const block of gates_selected) {
+                    deleteBlock(block);
+                }
+                gates_selected = [];
                 canvas_dirty = true;
             }
         });
@@ -540,7 +618,7 @@ function renderCanvas() {
         for (let pinIndex = 0; pinIndex < block.outputs.length; pinIndex++) {
             for (let connectionIndex = 0; connectionIndex < block.outputs[pinIndex].length; connectionIndex++) {
                 // find the block that this pin is connected to
-                const connectedBlock = blocks.find((b) => b.id === block.outputs[pinIndex][connectionIndex]);
+                const connectedBlock = getBlockById(block.outputs[pinIndex][connectionIndex]);
                 if (gates_selected.includes(connectedBlock) || gates_selecting.includes(connectedBlock) || this_block_sel) {
                     ctx.lineWidth = 3;
                 }
