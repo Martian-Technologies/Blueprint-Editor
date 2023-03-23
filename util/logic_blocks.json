@@ -691,7 +691,7 @@
     {
         "name": "Wireless Router (receive)",
         "description": "This wireless device can transmit data accross long distances!\n\nPaint color defines channel\nWhite number for frequency\n\nCaution: wireless devices on the same channel and frequency will interfere with each other.",
-        "type": 53,
+        "type": 54,
         "category": "Math",
         "inputPinNames": ["Input"],
         "outputPinNames": ["Output"],

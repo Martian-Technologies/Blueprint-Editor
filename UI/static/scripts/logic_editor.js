@@ -14,7 +14,8 @@ const SIDE_PANEL_COLOR = "#333842";
 const SIDE_PANEL_TEXT_COLOR = "#ffffff";
 const SIDE_PANEL_HOVER_COLOR = "#4a4e57";
 const PIN_COLOR = "#ffffff";
-const SELECT_BOX_COLOR = "#ffffff33";
+const SELECT_BOX_COLOR = "#ffffff1a";
+const SELECT_BOX_OUTLINE_COLOR = "#ffffff44";
 const GATE_SELECTED_COLOR = "#4a4e57";
 const GATE_SELECTED_OUTLINE_COLOR = "#ffffff";
 const uuid = location.pathname.split("/")[2];
@@ -40,7 +41,56 @@ let selecting_box = false;
 let selection_start = { x: 0, y: 0 };
 let gates_selected = [];
 let gates_selecting = [];
+let holding_block = false;
+let hovering_over_block = null;
+let hovering_over_pin = null;
+let hovering_over_pin_type = null;
+let dragging_connection_direction = null;
+let dragging_connection_pin = null;
+let dragging_connection_block = null;
+let dragging_connection = false;
 addEventListener("load", ready);
+function checkConnectionPins(b1, b2, p1Direction, p1Index, p2Index) {
+    if (p1Direction == "input") {
+        if (b1.inputs[p1Index].includes(b2.id)) {
+            return true;
+        }
+    }
+    if (p1Direction == "output") {
+        if (b2.inputs[p2Index].includes(b1.id)) {
+            return true;
+        }
+    }
+    return false;
+}
+function connectPins(b1, b2, p1Direction, p1Index, p2Index) {
+    if (p1Direction == "input") {
+        b1.inputs[p1Index].push(b2.id);
+        b2.outputs[p2Index].push(b1.id);
+    }
+    if (p1Direction == "output") {
+        b2.inputs[p2Index].push(b1.id);
+        b1.outputs[p1Index].push(b2.id);
+    }
+}
+function disconnectPins(b1, b2, p1Direction, p1Index, p2Index) {
+    if (p1Direction == "input") {
+        b1.inputs[p1Index] = b1.inputs[p1Index].filter(id => id != b2.id);
+        b2.outputs[p2Index] = b2.outputs[p2Index].filter(id => id != b1.id);
+    }
+    if (p1Direction == "output") {
+        b2.inputs[p2Index] = b2.inputs[p2Index].filter(id => id != b1.id);
+        b1.outputs[p1Index] = b1.outputs[p1Index].filter(id => id != b2.id);
+    }
+}
+function toggleConnectionPins(b1, b2, p1Direction, p1Index, p2Index) {
+    if (checkConnectionPins(b1, b2, p1Direction, p1Index, p2Index)) {
+        disconnectPins(b1, b2, p1Direction, p1Index, p2Index);
+    }
+    else {
+        connectPins(b1, b2, p1Direction, p1Index, p2Index);
+    }
+}
 function ready() {
     return __awaiter(this, void 0, void 0, function* () {
         matchSize();
@@ -89,26 +139,17 @@ function ready() {
                 sc_to_world_bottomright.y > max_y)) {
                 sc_to_world_topleft = screenToWorld(0, 0);
                 sc_to_world_bottomright = screenToWorld(document.getElementsByTagName("canvas")[0].width, document.getElementsByTagName("canvas")[0].height);
-                // if (
-                //     sc_to_world_topleft.x < min_x &&
-                //     sc_to_world_topleft.y < min_y &&
-                //     sc_to_world_bottomright.x > max_x &&
-                //     sc_to_world_bottomright.y > max_y
-                // ) {
-                //     break;
-                // }
                 zoom *= 1.1;
             }
         }
         // gates_selected.push(blocks[0]);
-        console.log(blocks);
         setInterval(renderCanvas, 1000 / 60);
         // detect click and drag
         const canvas = document.getElementsByTagName("canvas")[0];
         canvas.addEventListener("mousedown", (e) => {
             mouse_down = true;
-            last_mouse_x = e.clientX;
-            last_mouse_y = e.clientY;
+            // last_mouse_x = e.clientX;
+            // last_mouse_y = e.clientY;
             if (e.which == 3 || e.which == 2) {
                 moving_screen = true;
             }
@@ -117,23 +158,43 @@ function ready() {
                     const block = {
                         id: highest_id + 1,
                         type: block_option_selected.type,
-                        x: camera_x,
-                        y: camera_y,
+                        x: screenToWorld(last_mouse_x, last_mouse_y).x,
+                        y: screenToWorld(last_mouse_x, last_mouse_y).y,
                         inputs: [],
                         outputs: [],
                     };
+                    holding_block = true;
                     highest_id++;
                     blocks.push(block);
-                    gates_selected.push(block);
+                    gates_selected = [block];
                 }
             }
             else {
-                selecting_box = true;
-                selection_start = screenToWorld(last_mouse_x, last_mouse_y);
-                if (!e.shiftKey) {
-                    gates_selected = [];
+                if (hovering_over_pin !== null && !dragging_connection) {
+                    dragging_connection_pin = hovering_over_pin;
+                    dragging_connection_direction = hovering_over_pin_type;
+                    dragging_connection_block = hovering_over_block;
+                    dragging_connection = true;
                 }
-                canvas_dirty = true;
+                else {
+                    if (hovering_over_block && gates_selected.includes(hovering_over_block)) {
+                        holding_block = true;
+                    }
+                    else {
+                        if (!e.shiftKey) {
+                            gates_selected = [];
+                        }
+                        if (hovering_over_block) {
+                            gates_selected.push(hovering_over_block);
+                            holding_block = true;
+                        }
+                        else {
+                            selecting_box = true;
+                            selection_start = screenToWorld(last_mouse_x, last_mouse_y);
+                        }
+                        canvas_dirty = true;
+                    }
+                }
             }
         });
         canvas.addEventListener("contextmenu", (e) => {
@@ -142,6 +203,7 @@ function ready() {
         canvas.addEventListener("mouseup", () => {
             mouse_down = false;
             moving_screen = false;
+            holding_block = false;
             if (selecting_box) {
                 selecting_box = false;
                 // move contents from gates_selecting to gates_selected
@@ -152,10 +214,34 @@ function ready() {
                 }
                 gates_selecting = [];
             }
+            if (dragging_connection) {
+                if (hovering_over_pin_type !== null && hovering_over_pin_type !== dragging_connection_direction && hovering_over_pin !== null) {
+                    toggleConnectionPins(dragging_connection_block, hovering_over_block, dragging_connection_direction, dragging_connection_pin, hovering_over_pin);
+                }
+            }
+            dragging_connection_direction = null;
+            dragging_connection_pin = null;
+            dragging_connection_block = null;
+            dragging_connection = false;
         });
         canvas.addEventListener("mouseleave", () => {
             mouse_down = false;
             moving_screen = false;
+            holding_block = false;
+            if (selecting_box) {
+                selecting_box = false;
+                // move contents from gates_selecting to gates_selected
+                for (const block of gates_selecting) {
+                    if (!gates_selected.includes(block)) {
+                        gates_selected.push(block);
+                    }
+                }
+                gates_selecting = [];
+            }
+            dragging_connection_direction = null;
+            dragging_connection_pin = null;
+            dragging_connection_block = null;
+            dragging_connection = false;
         });
         canvas.addEventListener("mousemove", (e) => {
             current_mouse_x = e.clientX;
@@ -168,10 +254,17 @@ function ready() {
                     ((current_mouse_x - last_mouse_x) / canvas.height) * zoom;
                 camera_y -=
                     ((current_mouse_y - last_mouse_y) / canvas.height) * zoom;
-                last_mouse_x = current_mouse_x;
-                last_mouse_y = current_mouse_y;
                 canvas_dirty = true;
             }
+            if (holding_block) {
+                for (const block of gates_selected) {
+                    block.x += (current_mouse_x - last_mouse_x) / canvas.height * zoom;
+                    block.y += (current_mouse_y - last_mouse_y) / canvas.height * zoom;
+                }
+                canvas_dirty = true;
+            }
+            last_mouse_x = current_mouse_x;
+            last_mouse_y = current_mouse_y;
         }, 1000 / 60);
         // detect scroll
         canvas.addEventListener("wheel", (e) => {
@@ -208,7 +301,6 @@ function ready() {
 window.addEventListener("resize", matchSize);
 function matchSize() {
     const canvas = document.getElementsByTagName("canvas")[0];
-    console.log(canvas);
     // get size of canvas on screen
     const c_width = canvas.offsetWidth;
     const c_height = canvas.offsetHeight;
@@ -225,7 +317,6 @@ function fetchBlockOptions() {
         for (const block of data) {
             blockOptions.push(block);
         }
-        console.log(blockOptions);
     });
 }
 function fetchData() {
@@ -268,7 +359,6 @@ function screenToWorld(x, y) {
     };
 }
 function drawArrow(ctx, tip, angle, length, width) {
-    // console.log(tip, angle, length, width)
     const arrow_left = {
         x: tip.x + Math.cos(angle + Math.PI / 4) * width + Math.cos(angle) * length,
         y: tip.y + Math.sin(angle + Math.PI / 4) * width + Math.sin(angle) * length,
@@ -320,7 +410,6 @@ function drawConnection(ctx, start, end, cnt_ref, scale) {
     // draw arrow
     if (zoom < 30) {
         drawArrow(ctx, arrow_tip, arrow_angle, arrow_size, arrow_size * 1);
-        // console.log('rendering arrow')
     }
 }
 function renderCanvas() {
@@ -346,11 +435,16 @@ function renderCanvas() {
     // render background
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    hovering_over_block = null;
+    hovering_over_pin = null;
+    hovering_over_pin_type = null;
     //render gates
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i];
+        let this_block_sel = false;
         if (gates_selected.includes(block) || gates_selecting.includes(block)) {
             ctx.lineWidth = 3;
+            this_block_sel = true;
         }
         else {
             ctx.lineWidth = 1;
@@ -372,6 +466,12 @@ function renderCanvas() {
             ctx.arc(pinPos.x, pinPos.y, scale / 8, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
+            // check if mouse is hovering over pin
+            if (Math.abs(pinPos.x - current_mouse_x) < scale / 8 && Math.abs(pinPos.y - current_mouse_y) < scale / 8) {
+                hovering_over_block = block;
+                hovering_over_pin = j;
+                hovering_over_pin_type = "input";
+            }
         }
         // draw output pins
         for (let j = 0; j < blockType.outputPinNames.length; j++) {
@@ -381,6 +481,11 @@ function renderCanvas() {
             ctx.arc(pinPos.x, pinPos.y, scale / 8, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
+            if (Math.abs(pinPos.x - current_mouse_x) < scale / 8 && Math.abs(pinPos.y - current_mouse_y) < scale / 8) {
+                hovering_over_block = block;
+                hovering_over_pin = j;
+                hovering_over_pin_type = "output";
+            }
         }
         if (gates_selected.includes(block)) {
             ctx.fillStyle = GATE_SELECTED_COLOR;
@@ -403,6 +508,12 @@ function renderCanvas() {
         ctx.roundRect(block_topleft.x, block_topleft.y, scale * gate_width, scale * gate_height, 0.15 * scale);
         ctx.fill();
         ctx.stroke();
+        // check if mouse is hovering over gate
+        if (Math.abs(pos.x - current_mouse_x) < scale / 2 * gate_width && Math.abs(pos.y - current_mouse_y) < scale / 2 * gate_height) {
+            hovering_over_block = block;
+            hovering_over_pin = null;
+            hovering_over_pin_type = null;
+        }
         // check block collision with selection box
         if (selecting_box) {
             const block_bottomright = {
@@ -426,13 +537,16 @@ function renderCanvas() {
         ctx.strokeStyle = PIN_COLOR;
         ctx.fillStyle = PIN_COLOR;
         // render connections
-        // console.log(block.outputs)
         for (let pinIndex = 0; pinIndex < block.outputs.length; pinIndex++) {
-            // console.log(block.outputs[pinIndex])
             for (let connectionIndex = 0; connectionIndex < block.outputs[pinIndex].length; connectionIndex++) {
                 // find the block that this pin is connected to
                 const connectedBlock = blocks.find((b) => b.id === block.outputs[pinIndex][connectionIndex]);
-                // console.log(connectedBlock)
+                if (gates_selected.includes(connectedBlock) || gates_selecting.includes(connectedBlock) || this_block_sel) {
+                    ctx.lineWidth = 3;
+                }
+                else {
+                    ctx.lineWidth = 1;
+                }
                 if (!connectedBlock) {
                     console.error("Could not find connected block: " + block.outputs[pinIndex][connectionIndex]);
                     return;
@@ -449,11 +563,48 @@ function renderCanvas() {
             }
         }
     }
+    // render dragging connection
+    if (dragging_connection) {
+        let direction = null;
+        let start = null;
+        let end = null;
+        if (dragging_connection_direction === "output") {
+            start = worldToScreen(dragging_connection_block.x + .625, dragging_connection_block.y + dragging_connection_pin - (dragging_connection_block.outputs.length - 1) / 2);
+            end = {
+                x: current_mouse_x,
+                y: current_mouse_y
+            };
+            direction = "output";
+        }
+        else {
+            start = {
+                x: current_mouse_x,
+                y: current_mouse_y
+            };
+            end = worldToScreen(dragging_connection_block.x - .625, dragging_connection_block.y + dragging_connection_pin - (dragging_connection_block.inputs.length - 1) / 2);
+            direction = "input";
+        }
+        if (hovering_over_pin_type !== null && hovering_over_pin_type !== dragging_connection_direction) {
+            direction = null;
+            if (hovering_over_pin_type == "input") {
+                end = worldToScreen(hovering_over_block.x - .625, hovering_over_block.y + hovering_over_pin - (hovering_over_block.inputs.length - 1) / 2);
+            }
+            if (hovering_over_pin_type == "output") {
+                start = worldToScreen(hovering_over_block.x + .625, hovering_over_block.y + hovering_over_pin - (hovering_over_block.outputs.length - 1) / 2);
+            }
+        }
+        drawConnection(ctx, start, end, direction === null ? null : (direction === "output" ? "start" : "end"), scale);
+    }
     // render selection box
     if (selecting_box) {
         ctx.fillStyle = SELECT_BOX_COLOR;
+        ctx.strokeStyle = SELECT_BOX_OUTLINE_COLOR;
         // draw rect
-        ctx.fillRect(selection_screen_topleft.x, selection_screen_topleft.y, selection_screen_width, selection_screen_height);
+        ctx.beginPath();
+        ctx.rect(selection_screen_topleft.x, selection_screen_topleft.y, selection_screen_width, selection_screen_height);
+        ctx.fill();
+        ctx.stroke();
+        // ctx.fillRect(selection_screen_topleft.x, selection_screen_topleft.y, selection_screen_width, selection_screen_height);
     }
     // render side panel
     ctx.fillStyle = SIDE_PANEL_COLOR;
@@ -464,7 +615,6 @@ function renderCanvas() {
     let y = 0;
     block_option_selected = null;
     for (const block of blockOptions) {
-        // console.log(block)
         // calculate bounding box
         const width = sidebarWidth;
         const height = 30;
