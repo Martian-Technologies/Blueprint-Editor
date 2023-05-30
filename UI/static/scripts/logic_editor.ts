@@ -94,6 +94,7 @@ function connectPins(b1: Block, b2: Block, p1Direction: "input" | "output", p1In
         b2.inputs[p2Index].push(b1.id);
         b1.outputs[p1Index].push(b2.id);
     }
+    saveData();
 }
 
 function disconnectPins(b1: Block, b2: Block, p1Direction: "input" | "output", p1Index: number, p2Index: number) {
@@ -105,6 +106,7 @@ function disconnectPins(b1: Block, b2: Block, p1Direction: "input" | "output", p
         b2.inputs[p2Index] = b2.inputs[p2Index].filter(id => id != b1.id);
         b1.outputs[p1Index] = b1.outputs[p1Index].filter(id => id != b2.id);
     }
+    saveData();
 }
 
 function toggleConnectionPins(b1: Block, b2: Block, p1Direction: "input" | "output", p1Index: number, p2Index: number) {
@@ -133,6 +135,7 @@ function clearPin(block: Block, pinDirection: "input" | "output", pinIndex: numb
         }
         block.outputs[pinIndex] = [];
     }
+    saveData();
 }
 
 function deleteBlock(block: Block) {
@@ -144,6 +147,7 @@ function deleteBlock(block: Block) {
     }
     // remove from blocks without creating a new array
     blocks.splice(blocks.indexOf(block), 1);
+    saveData();
 }
 
 function getBlockById(id: number): Block | null {
@@ -243,6 +247,7 @@ async function ready() {
                 blocks.push(block);
                 gates_selected = [block];
             }
+            saveData();
         } else {
             if (hovering_over_pin !== null && !dragging_connection) {
                 dragging_connection_pin = hovering_over_pin;
@@ -342,6 +347,7 @@ async function ready() {
                 block.y += (current_mouse_y - last_mouse_y) / canvas.height * zoom;
             }
             canvas_dirty = true;
+            saveData();
         }
         last_mouse_x = current_mouse_x;
         last_mouse_y = current_mouse_y;
@@ -381,6 +387,7 @@ async function ready() {
             }
             gates_selected = [];
             canvas_dirty = true;
+            saveData();
         }
     });
 }
