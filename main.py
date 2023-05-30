@@ -9,6 +9,8 @@ from util import sm_folder, project_util, logic_block_options
 import requests
 import os
 
+with open('top_logo', 'r') as f:
+    top_logo = f.read()
 
 app = Flask(__name__, template_folder='UI', static_folder='UI/static')
 
@@ -32,7 +34,8 @@ def get_projects() -> list[project_util.Project]:
 @app.route("/")
 async def index():
     projects = get_projects()
-    resp = make_response(render_template('index.html', projects=projects))
+    resp = make_response(render_template(
+        'index.html', projects=projects, top_logo=top_logo))
     resp.headers['Cache-Control'] = 'no-cache'
     return resp
 

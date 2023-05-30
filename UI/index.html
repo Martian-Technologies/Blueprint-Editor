@@ -1,47 +1,58 @@
 <html>
-    <head>
-        <title>MTech Blueprint Editor</title>
-        <link
-            rel="stylesheet"
-            type="text/css"
-            href="/static/stylesheets/stylespace.css"
-        />
-        <link
-            rel="stylesheet"
-            type="text/css"
-            href="/static/stylesheets/index.css"
-        />
-    </head>
-    <body>
-        <div id="header">
-            <h1> _____       _____  _____  _____  _____    _____  __     _____  _____  _____  _____  _____  _____  _____    _____  ____   _____  _____  _____  _____<br>|     | ___ |_   _||   __||     ||  |  |  | __  ||  |   |  |  ||   __||  _  || __  ||     ||   | ||_   _|  |   __||    \ |     ||_   _||     || __  |<br>| | | ||___|  | |  |   __||   --||     |  | __ -||  |__ |  |  ||   __||   __||    -||-   -|| | | |  | |    |   __||  |  ||-   -|  | |  |  |  ||    -|<br>|_|_|_|       |_|  |_____||_____||__|__|  |_____||_____||_____||_____||__|   |__|__||_____||_|___|  |_|    |_____||____/ |_____|  |_|  |_____||__|__|</h1>
-        </div>
-        <!-- grid of projects -->
-        <div id="projects">
-            {% for project in projects %}
-            <span
-                class="project"
-                data-tilt
-                data-tilt-glare
-                data-tilt-max-glare="0.05"
-                data-tilt-scale="1.05"
-                onclick="window.location.href = '/editor/{{project.uuid}}';"
-            >
-                <span class="projectText">
-                    <div class="projectTitle">{{project.name}}</div>
-                    <div class="projectDescription">
-                        {{project.description}}
-                    </div>
-                </span>
+
+<head>
+    <title>MTech Blueprint Editor</title>
+    <link
+        rel="stylesheet"
+        type="text/css"
+        href="/static/stylesheets/stylespace.css" />
+    <link
+        rel="stylesheet"
+        type="text/css"
+        href="/static/stylesheets/index.css" />
+</head>
+
+<body>
+    <div id="header">
+        <h1>{{top_logo}}</h1>
+    </div>
+    <!-- grid of projects -->
+    <div id="projects">
+        {% for project in projects %}
+        <span
+            class="project"
+            data-tilt
+            data-tilt-glare
+            data-tilt-max-glare="0.05"
+            data-tilt-scale="1.05"
+            onclick="window.location.href = '/editor/{{project.uuid}}';">
+            <span class="projectText">
+                <div class="projectTitle">{{project.name}}</div>
+                <div class="projectDescription">
+                    {{project.description}}
+                </div>
             </span>
-            {% endfor %}
-        </div>
-        <div id="footer">
-            <p>MTech Blueprint Editor</p>
-        </div>
-        <script
-            type="text/javascript"
-            src="/static/scripts/vanilla-tilt.js"
-        ></script>
-    </body>
+        </span>
+        {% endfor %}
+        <span
+            class="project"
+            data-tilt
+            data-tilt-glare
+            data-tilt-max-glare="0.05"
+            data-tilt-scale="1.05"
+            onclick="window.location.href = '/new_project';">
+            <!-- a big plus in the center and "create new project" underneath -->
+            <span class="projectText">
+                <div class="projectCenter">+</div>
+            </span>
+        </span>
+    </div>
+    <div id="footer">
+        <p>MTech Blueprint Editor</p>
+    </div>
+    <script
+        type="text/javascript"
+        src="/static/scripts/vanilla-tilt.js"></script>
+</body>
+
 </html>

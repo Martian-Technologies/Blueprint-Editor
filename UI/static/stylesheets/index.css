@@ -10,7 +10,7 @@
 }
 
 
-.project:hover{
+.project:hover {
     cursor: pointer;
     z-index: 999;
 }
@@ -18,11 +18,21 @@
 /* .projectText{
     width: 30vh;
 } */
-.projectTitle{
+.projectTitle {
     font-size: var(--font-size-large);
 }
-.projectDescription{
+
+.projectDescription {
     font-size: var(--font-size-base);
+}
+
+.projectCenter {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: var(--big-plus-font-size);
 }
 
 #projects {
