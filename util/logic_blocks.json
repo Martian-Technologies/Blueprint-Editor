@@ -700,5 +700,18 @@
         "inputPinDescriptions": ["Set frequency/value"],
         "outputPinDescriptions": ["Value received"],
         "requiredMods": ["The Modpack"]
+    },
+    {
+        "name": "Generic Multi-input-output gate",
+        "description": "",
+        "type": 55,
+        "category": "Math",
+        "inputPinNames": ["Input1", "Input2", "Input3"],
+        "outputPinNames": ["Output", "Output2", "Output3"],
+        "inputPinTypes": [["number", "logic"], ["number", "logic"], ["number", "logic"]],
+        "outputPinTypes": [["number", "logic"], ["number", "logic"], ["number", "logic"]],
+        "inputPinDescriptions": ["Input 1", "Input 2", "Input 3"],
+        "outputPinDescriptions": ["Output 1", "Output 2", "Output 3"],
+        "requiredMods": ["The Modpack"]
     }
 ]
